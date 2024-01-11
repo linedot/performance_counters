@@ -29,7 +29,7 @@ Implementations:
 
   ## Usage: 
 
-  ```
+  ```cpp
   #if defined(__APPLE__)
   constexpr char cycles_event[] = "CPMU_CORE_CYCLE";
   #else
