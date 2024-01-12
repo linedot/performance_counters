@@ -9,9 +9,27 @@ std::uint64_t read_cycles()
 {
     std::uint64_t cycles = 0;
 #if defined(__x86_64__)
-    std::uint32_t hi=0,lo=0;
-    __asm__ volatile("rdtsc" : "=a"(lo), "=d"(hi));
-    cycles = (static_cast<std::uint64_t>(lo))|(static_cast<std::uint64_t>(hi)<<32);
+    // RDTSC variant, counts reference cycles on modern CPUs, not CPU cycles
+    asm ("rdtsc\n\t"
+         "shlq $32, %%rdx\n\t"
+         "orq %%rdx, %%rax\n\t"
+         "movq %%rax, %[cycles]\n\t"
+         : [cycles] "=r" (cycles)
+         :
+         : "rax", "rdx");
+    
+    // RDPMC variant (weird with permissions, also need to set up counters beforehand with wrmsr etc... not worth it?)
+    //asm ("movq $0x1, %%rcx\n\t"
+    //     "lfence\n\t"
+    //     "rdpmc\n\t"
+    //     "lfence\n\t"
+    //     "shlq $32, %%rdx\n\t"
+    //     "orq %%rdx, %%rax\n\t"
+    //     "movq %%rax, %[cycles]\n\t"
+    //     : [cycles] "=r" (cycles)
+    //     :
+    //     : "rax", "rdx");
+            
 #elif defined(__aarch64__)
     __asm__ volatile("mrs %[cycles], cntvct_el0" : [cycles] "=r" (cycles));    
 #elif defined(__riscv)
